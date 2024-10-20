@@ -1,0 +1,7 @@
+node_modules
+.dhiwise
+.git.zip
+.env
+.env.docker
+/.wwebjs_auth
+*.html
