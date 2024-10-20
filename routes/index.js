@@ -1,10 +1,13 @@
-const express = require('express');
-const path = require('path');
+// routes/index.js
+const express = require("express");
 const router = express.Router();
+const whatsappRoutes = require("./services/whatsappRoutes");
+const googleScriptRoutes = require("./services/googleScriptRoutes"); // Importa o novo módulo
 
-// Serve the index.html file for the root route
-router.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../views/index.html'));
-});
+router.use(require("./admin/index"));
+router.use(require("./device/v1/index"));
+router.use(require("./client/v1/index"));
+router.use("/whatsapp", whatsappRoutes);
+router.use("/google-script", googleScriptRoutes); // Adiciona a rota do Google Script
 
 module.exports = router;
