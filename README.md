@@ -1,29 +1,8 @@
-# WhatsApp Messaging Service
+# nodejs
+A minimal Node.js web application.
 
-Este projeto é um serviço de integração com o WhatsApp utilizando a biblioteca `whatsapp-web.js`, permitindo o envio e o processamento de mensagens de maneira automatizada. O sistema utiliza uma lista de permissões (`whitelist`) para garantir que apenas números autorizados possam enviar comandos e interagir com o bot.
+![static-site](public/images/static-site.png)
 
-## Funcionalidades
+For a step-by-step guide to deploying on [Railway](https://railway.app/?referralCode=alphasec), see [this](https://alphasec.io/how-to-deploy-a-nodejs-app-on-railway/) post, or click the button below.
 
-- Envio de mensagens automatizadas para números específicos via WhatsApp.
-- Processamento de mensagens recebidas de números autorizados.
-- Lista de permissões (`whitelist`) configurável via arquivo `.env`.
-- Geração de QR code para conectar o cliente WhatsApp.
-- Carregamento dinâmico de comandos a partir da pasta de comandos.
-
-## Requisitos
-
-- Node.js v14 ou superior
-- WhatsApp instalado em um celular e pronto para sincronização com WhatsApp Web.
-- Conta no MongoDB (para conexão com o banco de dados, caso necessário).
-- Arquivo `.env` com as variáveis de ambiente configuradas.
-
-## Instalação
-
-1. Clone o repositório:
-
-   ```bash
-   git clone https://github.com/sSmalKk/whatsappbot.git
-   ```
-
-2. `$ npm install`
-3. `$ npm start`
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/Abo1zu?referralCode=alphasec)
