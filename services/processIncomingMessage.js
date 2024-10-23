@@ -1,6 +1,6 @@
-const helpCommand = require("./commands/help"); // Importação manual do comando help
 const fs = require('fs');
 const path = require('path');
+const helpCommand = require("./commands/help"); // Importação manual do comando help
 
 // Função para carregar dinamicamente todos os comandos da pasta 'commands'
 const loadCommands = () => {
@@ -10,7 +10,7 @@ const loadCommands = () => {
   for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
     if (command.commandName && command.execute) {
-      commands[command.commandName] = command.execute;
+      commands[command.commandName.toLowerCase()] = command.execute; // Comando convertido para minúsculas
     }
   }
 
@@ -19,30 +19,36 @@ const loadCommands = () => {
 
 // Carrega os comandos, incluindo o help
 const availableCommands = {
-  [helpCommand.commandName]: helpCommand.execute, // Importação manual do comando help
+  [helpCommand.commandName.toLowerCase()]: helpCommand.execute, // Importação manual do comando help
   ...loadCommands(), // Comandos carregados automaticamente
 };
 
 const processIncomingMessage = (phoneNumber, message, client) => {
   console.log(`Processando mensagem de ${phoneNumber}: ${message}`);
 
-  // Lista de sufixos permitidos
-  const commandSuffixes = ["/", ".", "./"];
+  // Define o prefixo de comando (pode ser alterado conforme necessário)
+  const commandPrefix = "/";
 
-  // Verifica se a mensagem começa com um sufixo permitido
-  for (const suffix of commandSuffixes) {
-    if (message.toLowerCase().startsWith(suffix)) {
-      const command = message.slice(suffix.length).toLowerCase();
+  if (message.startsWith(commandPrefix)) {
+    // Extrai o comando e os argumentos da mensagem
+    const [command, ...args] = message.slice(commandPrefix.length).trim().split(/\s+/); // Usa regex para tratar múltiplos espaços
 
-      // Verifica se o comando existe
-      if (availableCommands[command]) {
-        return availableCommands[command](phoneNumber, client); // Executa o comando
-      }
+    // Converte o comando para minúsculas para evitar problemas de case sensitivity
+    const commandLower = command.toLowerCase();
+
+    // Verifica se o comando existe no conjunto de comandos carregados
+    if (availableCommands[commandLower]) {
+      console.log(`Executando o comando: ${commandLower} para o número: ${phoneNumber}`);
+      return availableCommands[commandLower](phoneNumber, client, args); // Executa o comando com os argumentos
+    } else {
+      console.log(`Comando não encontrado: ${commandLower}`);
+      return client.sendMessage(phoneNumber, `Comando não reconhecido: ${commandLower}`);
     }
   }
 
-  // Se não houver sufixo ou o comando não for encontrado, não faz nada
-  console.log(`Nenhum comando reconhecido e nenhum sufixo detectado em: ${message}`);
+  // Caso a mensagem não seja um comando reconhecido
+  console.log(`Nenhum comando reconhecido para a mensagem: ${message}`);
+  return client.sendMessage(phoneNumber, "Comando não reconhecido. Por favor, tente novamente.");
 };
 
 module.exports = { processIncomingMessage };
