@@ -1,89 +1,121 @@
-const path = require("path");
-const fs = require("fs");
-const xlsx = require("xlsx");
-const { MessageMedia } = require("whatsapp-web.js");
+const fs = require('fs');
+const path = require('path');
+const xlsx = require('xlsx');
+const { loadPendingReceipts } = require('../utils/loadReceipts');
 
-const jsonFilePath = path.join(__dirname, "../../excel_files", "users.json");
+// JSON para armazenar o mapeamento dos recibos processados
+let recibosMapeados = {};
 
-// Função para carregar o JSON com os usuários
-function loadJSON() {
-  if (fs.existsSync(jsonFilePath)) {
-    const jsonData = fs.readFileSync(jsonFilePath);
-    return JSON.parse(jsonData);
-  } else {
-    return { users: [] };
-  }
-}
-
+// Comando para listar recibos pendentes
 module.exports = {
   commandName: "recibos",
-  execute: async (phoneNumber, client, chatLocked) => {
+  execute: async (phoneNumber, client) => {
     try {
-      // Caminho do arquivo de recibos específico para o usuário
-      const filePath = path.join(__dirname, `../../excel_files/${phoneNumber}_recibos.xlsx`);
+      console.log(`Carregando recibos para o número: ${phoneNumber}`);
 
-      if (!fs.existsSync(filePath)) {
-        client.sendMessage(phoneNumber, "Nenhum arquivo de recibos encontrado para o seu número.");
-        return;
-      }
+      // Carrega os recibos pendentes
+      const pendingReceipts = await loadPendingReceipts(phoneNumber);
 
-      // Carrega os dados do arquivo JSON
-      const jsonData = loadJSON();
-      const user = jsonData.users.find(u => u.phoneNumber === phoneNumber);
-      if (!user) {
-        client.sendMessage(phoneNumber, "Nenhum recibo encontrado para o seu número.");
-        return;
-      }
-
-      // Carrega a planilha de recibos do usuário
-      const workbook = xlsx.readFile(filePath);
-      const worksheet = workbook.Sheets["recibos"];
-
-      if (!worksheet) {
-        client.sendMessage(phoneNumber, "Nenhuma planilha de recibos encontrada.");
-        return;
-      }
-
-      // Lista de recibos pendentes (coluna 'Recebido' tem valor 0)
-      const userReceipts = [];
-      for (let row = 4; worksheet[`A${row}`]; row++) {
-        const id = worksheet[xlsx.utils.encode_cell({ c: 0, r: row })]?.v;
-        const valor = worksheet[xlsx.utils.encode_cell({ c: 1, r: row })]?.v;
-        const dataEmissao = worksheet[xlsx.utils.encode_cell({ c: 2, r: row })]?.v;
-        const recebido = worksheet[xlsx.utils.encode_cell({ c: 3, r: row })]?.v;
-
-        if (id && recebido === 0) {
-          userReceipts.push({
-            id,
-            valor,
-            dataEmissao,
-            recebido
-          });
-        }
-      }
-
-      if (userReceipts.length === 0) {
+      if (!pendingReceipts || pendingReceipts.receipts.length === 0) {
         client.sendMessage(phoneNumber, "Nenhum recibo pendente ou todos os recibos já foram recebidos.");
         return;
       }
 
-      // Lista os recibos pendentes
+      // Mapeia os recibos carregados para o JSON
+      recibosMapeados[phoneNumber] = pendingReceipts.receipts.map((recibo, index) => ({
+        id: recibo.id,
+        valor: recibo.valor,
+        dataEmissao: recibo.dataEmissao,
+        index: index + 1
+      }));
+
+      // Prepara a mensagem com a lista de recibos pendentes
       let message = "Recibos pendentes (não recebidos):\n";
-      userReceipts.forEach((recibo, index) => {
+      pendingReceipts.receipts.forEach((recibo, index) => {
         message += `${index + 1}. ID: ${recibo.id}, Valor: ${recibo.valor}, Data: ${recibo.dataEmissao}\n`;
       });
 
+      // Envia a lista de recibos pendentes
       client.sendMessage(phoneNumber, message);
 
-      // Travar o chat e esperar o número do recibo
-      chatLocked[phoneNumber] = {
-        receipts: userReceipts,
-        filePath: filePath
+    } catch (error) {
+      client.sendMessage(phoneNumber, "Erro ao consultar recibos.");
+    }
+  },
+
+  receivePdf: async (phoneNumber, client, args, chatLocked) => {
+    try {
+      console.log(`Carregando recibos para o número: ${phoneNumber}`);
+
+      // Carrega os recibos pendentes
+      const pendingReceipts = await loadPendingReceipts(phoneNumber);
+      // Verifica se os recibos já estão carregados em chatLocked
+      if (!pendingReceipts || pendingReceipts.receipts.length === 0) {
+        client.sendMessage(phoneNumber, "Nenhum recibo foi carregado. Por favor, execute o comando /recibos primeiro.");
+        return;
+      }
+
+      const receiptIndex = parseInt(args[0], 10) - 1;
+
+      // Verifica se o índice do recibo é válido
+      if (isNaN(receiptIndex) || receiptIndex < 0 || receiptIndex >= pendingReceipts.receipts.length) {
+        client.sendMessage(phoneNumber, "Número de recibo inválido. Por favor, tente novamente.");
+        return;
+      }
+
+      const receipt = pendingReceipts.receipts[receiptIndex];
+      console.log(`Recibo selecionado: ID=${receipt.id}, Valor=${receipt.valor}, Data=${receipt.dataEmissao}`);
+
+      // Caminho para salvar o PDF
+      const pdfFolderPath = path.join(__dirname, "../../pdf_files", phoneNumber, receipt.dataEmissao.split('-').slice(0, 2).join('-'));
+      const pdfPath = path.join(pdfFolderPath, `${receipt.id}.pdf`);
+
+      // Verifica se a pasta existe, se não, cria a pasta
+      if (!fs.existsSync(pdfFolderPath)) {
+        fs.mkdirSync(pdfFolderPath, { recursive: true });
+      }
+
+      // Envia mensagem com detalhes do recibo e aguarda o PDF
+      client.sendMessage(phoneNumber, `Você escolheu o Recibo ID: ${receipt.id}, Valor: ${receipt.valor}, Data de Emissão: ${receipt.dataEmissao}. Por favor, envie o PDF.`);
+
+      // Travar o chat
+      chatLocked[phoneNumber] = pendingReceipts; // Armazena o recibo e trava o chat
+
+      // Listener para receber o PDF do usuário
+      const pdfListener = async (msg) => {
+        if (msg.from === phoneNumber && msg.hasMedia) {
+          const media = await msg.downloadMedia();
+
+          // Verifica se o arquivo enviado é um PDF
+          if (media.mimetype === "application/pdf") {
+            fs.writeFileSync(pdfPath, Buffer.from(media.data, "base64"));
+            client.sendMessage(phoneNumber, `PDF do recibo ${receipt.id} recebido e salvo.`);
+
+            // Atualiza a célula "Recebido" no Excel
+            const filePath = pendingReceipts.filePath;
+            const workbook = xlsx.readFile(filePath);
+            const worksheet = workbook.Sheets["recibos"];
+            const rowToUpdate = receipt.id + 4;
+            worksheet[`D${rowToUpdate}`] = { v: 1 };  // Marca o recibo como "recebido" no Excel
+
+            // Salva a planilha atualizada
+            xlsx.writeFile(workbook, filePath);
+
+            client.sendMessage(phoneNumber, `Recibo ${receipt.id} foi marcado como recebido.`);
+            delete chatLocked[phoneNumber];  // Remove o bloqueio após o recebimento do PDF
+            client.removeListener('message', pdfListener);  // Remove o listener após salvar o PDF
+          } else {
+            client.sendMessage(phoneNumber, "Formato de arquivo inválido. Por favor, envie um PDF.");
+          }
+        }
       };
 
+      // Adiciona o listener para o PDF
+      client.on("message", pdfListener);
+
     } catch (error) {
-      console.error(`Erro ao consultar recibos para ${phoneNumber}: ${error.message}`);
-      client.sendMessage(phoneNumber, "Erro ao consultar recibos.");
+      client.sendMessage(phoneNumber, "Ocorreu um erro ao processar seu recibo. Por favor, tente novamente.");
+      console.error(`Erro ao processar o comando "receberpdf" para ${phoneNumber}:`, error);
     }
   }
 };
