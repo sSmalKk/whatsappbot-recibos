@@ -1,25 +1,20 @@
 // help.js
 module.exports = {
   commandName: "help",
-  execute: (phoneNumber, client, args) => {
-    const message = `
-    🤖 *COMANDOS DISPONÍVEIS* 🤖
+  execute: (phoneNumber, client) => {
+    const helpMessage = `
+*Comandos disponíveis:*
+1. /cadastro <senha> <nome> <data de nascimento>(exemplo, 01/01/1998) - Registra um novo usuário.
+2. /recibos - Lista recibos pendentes.
 
-    📌 *COMO USAR:*
-    Para usar qualquer comando, apenas digite o texto que começa com "/" (barra). Não precisa ser complicado, é só copiar e enviar!
+*Instruções para Envio de Recibos:*
+- Após listar os recibos com o comando /recibos, digite o número referente ao recibo desejado para enviar o PDF.
+- Exemplo: Se o recibo aparece como "1. ID: 123", digite apenas "1" para selecioná-lo.
+- Em seguida, envie o PDF do recibo solicitado.
 
-    📜 *LISTA DE COMANDOS:*
-
-    - _/help_ 👉 *Mostra esta mensagem.* Se precisar de ajuda, pode usar sempre!
-    
-    - _/recibos_ 👉 *Lista os recibos pendentes.* Se tem algo para receber, ele vai te mostrar.
-
-    📝 *DICAS IMPORTANTES:*
-    1. Escreva o comando corretamente! Não coloque espaços antes ou depois.
-    2. Se pedir recibos, você vai receber uma lista. Depois, é só digitar o número que quer e seguir as instruções.
-    
-    Se tiver dúvidas, só me chamar! 😊
+*Informações Importantes:*
+- O app já vem com valores falsos para teste. Você será notificado pelo WhatsApp quando os valores reais forem atualizados.
     `;
-    client.sendMessage(phoneNumber, message);
-  }
+    client.sendMessage(phoneNumber, helpMessage);
+  },
 };

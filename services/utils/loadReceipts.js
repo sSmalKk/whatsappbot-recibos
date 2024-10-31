@@ -1,6 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const xlsx = require('xlsx');
+// loadReceipts.js
+const fs = require("fs");
+const path = require("path");
+const xlsx = require("xlsx");
 
 // Função para carregar recibos pendentes
 const loadPendingReceipts = async (phoneNumber) => {
@@ -21,18 +22,25 @@ const loadPendingReceipts = async (phoneNumber) => {
     }
 
     const receipts = [];
+    
+    // Inicia leitura na linha 5
     for (let row = 5; worksheet[`A${row}`]; row++) {
       const id = worksheet[`A${row}`]?.v;
       const valor = worksheet[`B${row}`]?.v;
       const dataEmissao = worksheet[`C${row}`]?.v;
       const recebido = worksheet[`D${row}`]?.v;
 
-      if (id && recebido === 0) {  // Recibo pendente
+      console.log(`Linha ${row} - ID: ${id}, Valor: ${valor}, Data: ${dataEmissao}, Recebido: ${recebido}`);
+      
+      // Adiciona recibo ao array apenas se `recebido` for 0 (pendente)
+      if (id && parseInt(recebido) === 0) {  
         receipts.push({ id, valor, dataEmissao, recebido });
       }
     }
 
+    console.log(`Recibos pendentes carregados: ${JSON.stringify(receipts, null, 2)}`);
     return { filePath, receipts };
+
   } catch (error) {
     console.error(`Erro ao carregar recibos para ${phoneNumber}: ${error.message}`);
     return null;
