@@ -107,3 +107,5 @@ dist
 /excel_files
 /pdf_files/556181594849@c.us/2024-01
 /pdf_files
+*.xlsx
+*.pdf
