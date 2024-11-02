@@ -26,7 +26,8 @@ module.exports = {
         id: recibo.id,
         valor: recibo.valor,
         dataEmissao: recibo.dataEmissao,
-        index: index + 1
+        index: index + 1,
+        row: recibo.row  // Armazena a linha exata do recibo
       }));
 
       // Prepara a mensagem com a lista de recibos pendentes
@@ -49,7 +50,7 @@ module.exports = {
 
       // Carrega os recibos pendentes
       const pendingReceipts = await loadPendingReceipts(phoneNumber);
-      // Verifica se os recibos já estão carregados em chatLocked
+
       if (!pendingReceipts || pendingReceipts.receipts.length === 0) {
         client.sendMessage(phoneNumber, "Nenhum recibo foi carregado. Por favor, execute o comando /recibos primeiro.");
         return;
@@ -91,11 +92,11 @@ module.exports = {
             fs.writeFileSync(pdfPath, Buffer.from(media.data, "base64"));
             client.sendMessage(phoneNumber, `PDF do recibo ${receipt.id} recebido e salvo.`);
 
-            // Atualiza a célula "Recebido" no Excel
+            // Atualiza a célula "Recebido" no Excel usando `receipt.row`
             const filePath = pendingReceipts.filePath;
             const workbook = xlsx.readFile(filePath);
             const worksheet = workbook.Sheets["recibos"];
-            const rowToUpdate = receipt.id + 4;
+            const rowToUpdate = receipt.row;  // Usa a linha exata para atualização
             worksheet[`D${rowToUpdate}`] = { v: 1 };  // Marca o recibo como "recebido" no Excel
 
             // Salva a planilha atualizada

@@ -1,24 +1,8 @@
 {
   "users": [
     {
-      "name": "nomequalquer",
-      "phoneNumber": "556182594849@c.us",
-      "columnInit": 0,
-      "columnEnd": 3
-    },
-    {
-      "name": "nome2qualquer",
-      "phoneNumber": "556182594249@c.us",
-      "columnInit": 4,
-      "columnEnd": 7
-    },
-    {
-      "name": "nomequalque",
+      "name": "gustavo",
       "phoneNumber": "556181594849@c.us"
-    },
-    {
-      "name": "Redford",
-      "phoneNumber": "351914072466@c.us"
     }
   ]
 }

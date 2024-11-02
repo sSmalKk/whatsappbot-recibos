@@ -32,9 +32,9 @@ const loadPendingReceipts = async (phoneNumber) => {
 
       console.log(`Linha ${row} - ID: ${id}, Valor: ${valor}, Data: ${dataEmissao}, Recebido: ${recebido}`);
       
-      // Adiciona recibo ao array apenas se `recebido` for 0 (pendente)
+      // Adiciona recibo ao array apenas se `recebido` for 0 (pendente), e guarda a linha
       if (id && parseInt(recebido) === 0) {  
-        receipts.push({ id, valor, dataEmissao, recebido });
+        receipts.push({ id, valor, dataEmissao, recebido, row });
       }
     }
 
