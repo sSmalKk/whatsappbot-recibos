@@ -109,3 +109,5 @@ dist
 /pdf_files
 *.xlsx
 *.pdf
+/pdf_files
+/excel_files
